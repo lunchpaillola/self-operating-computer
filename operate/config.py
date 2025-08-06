@@ -46,6 +46,7 @@ class Config:
         self.qwen_api_key = (
             None  # instance variables are backups in case saving to a `.env` fails
         )
+       
 
     def initialize_openai(self):
         if self.verbose:
@@ -128,6 +129,29 @@ class Config:
             api_key = os.getenv("ANTHROPIC_API_KEY")
         return anthropic.Anthropic(api_key=api_key)
 
+    def initialize_my_custom_model(self):
+        """
+        Initialize your custom model client.
+        Replace this with your actual model's initialization code.
+        """
+        if self.my_custom_api_key:
+            if self.verbose:
+                print("[Config][initialize_my_custom_model] using cached my_custom_api_key")
+            api_key = self.my_custom_api_key
+        else:
+            if self.verbose:
+                print("[Config][initialize_my_custom_model] no cached my_custom_api_key, try to get from env.")
+            api_key = os.getenv("MY_CUSTOM_API_KEY")
+        
+        # Replace this with your actual model client initialization
+        # Example:
+        # from your_model_library import YourModelClient
+        # client = YourModelClient(api_key=api_key)
+        # return client
+        
+        # For now, returning None as placeholder
+        return None
+
     def validation(self, model, voice_mode):
         """
         Validate the input parameters for the dialog operation.
@@ -149,6 +173,10 @@ class Config:
             "ANTHROPIC_API_KEY", "Anthropic API key", model == "claude-3"
         )
         self.require_api_key("QWEN_API_KEY", "Qwen API key", model == "qwen-vl")
+        # Add validation for your custom model
+        self.require_api_key("MY_CUSTOM_API_KEY", "My Custom Model API key", model == "my-custom-model")
+        # O3 uses the same OpenAI API key as O1
+        self.require_api_key("OPENAI_API_KEY", "OpenAI API key", model == "o3")
 
     def require_api_key(self, key_name, key_description, is_required):
         key_exists = bool(os.environ.get(key_name))
@@ -177,6 +205,8 @@ class Config:
                 self.anthropic_api_key = key_value
             elif key_name == "QWEN_API_KEY":
                 self.qwen_api_key = key_value
+            elif key_name == "MY_CUSTOM_API_KEY":
+                self.my_custom_api_key = key_value
             self.save_api_key_to_env(key_name, key_value)
             load_dotenv()  # Reload environment variables
             # Update the instance attribute with the new key

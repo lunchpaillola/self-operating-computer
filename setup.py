@@ -15,7 +15,7 @@ setup(
     install_requires=required,  # Add dependencies here
     entry_points={
         "console_scripts": [
-            "operate=operate.main:main_entry",
+            "operate-local=operate.main:main_entry",
         ],
     },
     package_data={

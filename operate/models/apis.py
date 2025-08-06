@@ -52,6 +52,10 @@ async def get_next_action(model, messages, objective, session_id):
     if model == "o1-with-ocr":
         operation = await call_o1_with_ocr(messages, objective, model)
         return operation, None
+    # Add alias for o3 to use the same O1 model
+    if model == "o3":
+        operation = await call_o3_with_ocr(messages, objective, model)
+        return operation, None
     if model == "agent-1":
         return "coming soon"
     if model == "gemini-pro-vision":
@@ -1058,6 +1062,221 @@ async def call_claude_3_with_ocr(messages, objective, model):
                 )
 
         return gpt_4_fallback(gpt4_messages, objective, model)
+
+
+async def call_o3_with_ocr(messages, objective, model):
+    """
+    Function for O3 model - uses OpenAI's O3 model.
+    """
+    if config.verbose:
+        print("[call_o3_with_ocr]")
+
+    try:
+        time.sleep(1)
+        client = config.initialize_openai()
+
+        confirm_system_prompt(messages, objective, model)
+        screenshots_dir = "screenshots"
+        if not os.path.exists(screenshots_dir):
+            os.makedirs(screenshots_dir)
+
+        screenshot_filename = os.path.join(screenshots_dir, "screenshot.png")
+        capture_screen_with_cursor(screenshot_filename)
+
+        with open(screenshot_filename, "rb") as img_file:
+            img_base64 = base64.b64encode(img_file.read()).decode("utf-8")
+
+        if len(messages) == 1:
+            user_prompt = get_user_first_message_prompt()
+        else:
+            user_prompt = get_user_prompt()
+
+        vision_message = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{img_base64}"},
+                },
+            ],
+        }
+        messages.append(vision_message)
+
+        response = client.chat.completions.create(
+            model="o3",  # Use the actual O3 model
+            messages=messages,
+        )
+
+        content = response.choices[0].message.content
+        content = clean_json(content)
+        content_str = content
+
+        content = json.loads(content)
+
+        processed_content = []
+
+        for operation in content:
+            if operation.get("operation") == "click":
+                text_to_click = operation.get("text")
+                if config.verbose:
+                    print("[call_o3_with_ocr][click] text_to_click", text_to_click)
+                
+                # Use OCR to find text coordinates
+                reader = easyocr.Reader(["en"])
+                result = reader.readtext(screenshot_filename)
+
+                text_element_index = get_text_element(
+                    result, text_to_click, screenshot_filename
+                )
+                coordinates = get_text_coordinates(
+                    result, text_element_index, screenshot_filename
+                )
+
+                # Add coordinates to the operation
+                operation["x"] = coordinates["x"]
+                operation["y"] = coordinates["y"]
+
+                if config.verbose:
+                    print("[call_o3_with_ocr][click] coordinates", coordinates)
+                    print("[call_o3_with_ocr][click] final operation", operation)
+                
+                processed_content.append(operation)
+            else:
+                processed_content.append(operation)
+
+        # Add assistant message to conversation history
+        assistant_message = {"role": "assistant", "content": content_str}
+        messages.append(assistant_message)
+
+        return processed_content
+
+    except Exception as e:
+        print(
+            f"{ANSI_GREEN}[Self-Operating Computer]{ANSI_BRIGHT_MAGENTA}[{model}] That did not work. Trying another method {ANSI_RESET}"
+        )
+        if config.verbose:
+            print("[Self-Operating Computer][Operate] error", e)
+            traceback.print_exc()
+        # Fallback to GPT-4 if O3 fails
+        return gpt_4_fallback(messages, objective, model)
+
+
+async def call_my_custom_model(messages, objective, model):
+    """
+    Example function for your custom model.
+    Replace this with your actual model implementation.
+    """
+    if config.verbose:
+        print("[call_my_custom_model]")
+
+    try:
+        time.sleep(1)
+        # Initialize your custom model client
+        client = config.initialize_my_custom_model()
+
+        # Confirm system prompt (this ensures the right system message is set)
+        confirm_system_prompt(messages, objective, model)
+        
+        # Create screenshots directory if it doesn't exist
+        screenshots_dir = "screenshots"
+        if not os.path.exists(screenshots_dir):
+            os.makedirs(screenshots_dir)
+
+        # Capture screenshot
+        screenshot_filename = os.path.join(screenshots_dir, "screenshot.png")
+        capture_screen_with_cursor(screenshot_filename)
+
+        # Convert screenshot to base64
+        with open(screenshot_filename, "rb") as img_file:
+            img_base64 = base64.b64encode(img_file.read()).decode("utf-8")
+
+        # Get the appropriate prompt based on message count
+        if len(messages) == 1:
+            user_prompt = get_user_first_message_prompt()
+        else:
+            user_prompt = get_user_prompt()
+
+        # Create the message with image and text
+        vision_message = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{img_base64}"},
+                },
+            ],
+        }
+        messages.append(vision_message)
+
+        # Call your custom model API
+        # Replace this with your actual API call
+        # Example:
+        # response = client.chat.completions.create(
+        #     model="your-model-name",
+        #     messages=messages,
+        #     max_tokens=1000,
+        # )
+        # content = response.choices[0].message.content
+        
+        # For now, using a placeholder response
+        content = '{"operation": "click", "text": "example", "reason": "This is a placeholder response"}'
+
+        # Clean the JSON response
+        content = clean_json(content)
+        content_str = content
+
+        # Parse the JSON
+        content = json.loads(content)
+
+        # Process the response (similar to other models)
+        processed_content = []
+
+        for operation in content:
+            if operation.get("operation") == "click":
+                text_to_click = operation.get("text")
+                if config.verbose:
+                    print("[call_my_custom_model][click] text_to_click", text_to_click)
+                
+                # Use OCR to find text coordinates (if needed)
+                reader = easyocr.Reader(["en"])
+                result = reader.readtext(screenshot_filename)
+
+                text_element_index = get_text_element(
+                    result, text_to_click, screenshot_filename
+                )
+                coordinates = get_text_coordinates(
+                    result, text_element_index, screenshot_filename
+                )
+
+                # Add coordinates to the operation
+                operation["x"] = coordinates["x"]
+                operation["y"] = coordinates["y"]
+
+                if config.verbose:
+                    print("[call_my_custom_model][click] coordinates", coordinates)
+                    print("[call_my_custom_model][click] final operation", operation)
+                
+                processed_content.append(operation)
+            else:
+                processed_content.append(operation)
+
+        # Add assistant message to conversation history
+        assistant_message = {"role": "assistant", "content": content_str}
+        messages.append(assistant_message)
+
+        return processed_content
+
+    except Exception as e:
+        print(
+            f"{ANSI_GREEN}[Self-Operating Computer]{ANSI_BRIGHT_MAGENTA}[{model}] That did not work. Trying another method {ANSI_RESET}"
+        )
+        if config.verbose:
+            print("[Self-Operating Computer][Operate] error", e)
+            traceback.print_exc()
+        # Fallback to GPT-4 if your model fails
+        return gpt_4_fallback(messages, objective, model)
 
 
 def get_last_assistant_message(messages):
