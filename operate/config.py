@@ -177,6 +177,8 @@ class Config:
         self.require_api_key("MY_CUSTOM_API_KEY", "My Custom Model API key", model == "my-custom-model")
         # O3 uses the same OpenAI API key as O1
         self.require_api_key("OPENAI_API_KEY", "OpenAI API key", model == "o3")
+        # O4-mini uses the same OpenAI API key as O1
+        self.require_api_key("OPENAI_API_KEY", "OpenAI API key", model == "o4-mini")
 
     def require_api_key(self, key_name, key_description, is_required):
         key_exists = bool(os.environ.get(key_name))

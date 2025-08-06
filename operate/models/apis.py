@@ -56,6 +56,10 @@ async def get_next_action(model, messages, objective, session_id):
     if model == "o3":
         operation = await call_o3_with_ocr(messages, objective, model)
         return operation, None
+    # Add O4-mini model support
+    if model == "o4-mini":
+        operation = await call_o4_mini_with_ocr(messages, objective, model)
+        return operation, None
     if model == "agent-1":
         return "coming soon"
     if model == "gemini-pro-vision":
@@ -1159,6 +1163,105 @@ async def call_o3_with_ocr(messages, objective, model):
             print("[Self-Operating Computer][Operate] error", e)
             traceback.print_exc()
         # Fallback to GPT-4 if O3 fails
+        return gpt_4_fallback(messages, objective, model)
+
+
+async def call_o4_mini_with_ocr(messages, objective, model):
+    """
+    Function for O4-mini model - uses OpenAI's O4-mini model.
+    Faster and cheaper than O3.
+    """
+    if config.verbose:
+        print("[call_o4_mini_with_ocr]")
+
+    try:
+        time.sleep(1)
+        client = config.initialize_openai()
+
+        confirm_system_prompt(messages, objective, model)
+        screenshots_dir = "screenshots"
+        if not os.path.exists(screenshots_dir):
+            os.makedirs(screenshots_dir)
+
+        screenshot_filename = os.path.join(screenshots_dir, "screenshot.png")
+        capture_screen_with_cursor(screenshot_filename)
+
+        with open(screenshot_filename, "rb") as img_file:
+            img_base64 = base64.b64encode(img_file.read()).decode("utf-8")
+
+        if len(messages) == 1:
+            user_prompt = get_user_first_message_prompt()
+        else:
+            user_prompt = get_user_prompt()
+
+        vision_message = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{img_base64}"},
+                },
+            ],
+        }
+        messages.append(vision_message)
+
+        response = client.chat.completions.create(
+            model="o4-mini",  # Use the O4-mini model
+            messages=messages,
+        )
+
+        content = response.choices[0].message.content
+        content = clean_json(content)
+        content_str = content
+
+        content = json.loads(content)
+
+        processed_content = []
+
+        for operation in content:
+            if operation.get("operation") == "click":
+                text_to_click = operation.get("text")
+                if config.verbose:
+                    print("[call_o4_mini_with_ocr][click] text_to_click", text_to_click)
+                
+                # Use OCR to find text coordinates
+                reader = easyocr.Reader(["en"])
+                result = reader.readtext(screenshot_filename)
+
+                text_element_index = get_text_element(
+                    result, text_to_click, screenshot_filename
+                )
+                coordinates = get_text_coordinates(
+                    result, text_element_index, screenshot_filename
+                )
+
+                # Add coordinates to the operation
+                operation["x"] = coordinates["x"]
+                operation["y"] = coordinates["y"]
+
+                if config.verbose:
+                    print("[call_o4_mini_with_ocr][click] coordinates", coordinates)
+                    print("[call_o4_mini_with_ocr][click] final operation", operation)
+                
+                processed_content.append(operation)
+            else:
+                processed_content.append(operation)
+
+        # Add assistant message to conversation history
+        assistant_message = {"role": "assistant", "content": content_str}
+        messages.append(assistant_message)
+
+        return processed_content
+
+    except Exception as e:
+        print(
+            f"{ANSI_GREEN}[Self-Operating Computer]{ANSI_BRIGHT_MAGENTA}[{model}] That did not work. Trying another method {ANSI_RESET}"
+        )
+        if config.verbose:
+            print("[Self-Operating Computer][Operate] error", e)
+            traceback.print_exc()
+        # Fallback to GPT-4 if O4-mini fails
         return gpt_4_fallback(messages, objective, model)
 
 
