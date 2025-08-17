@@ -6,156 +6,130 @@ This file provides essential context, conventions, and setup instructions for AI
 
 ## 1. Project Overview
 
-- **Purpose**: A framework to enable multimodal models to operate a computer by viewing the screen and deciding on mouse and keyboard actions to reach objectives
-- **Tech Stack**: Python 3.8+, OpenAI GPT-4o/4.1/o1, Claude 3, Gemini Pro Vision, Qwen-VL, LLaVa, PyAutoGUI, EasyOCR, Ultralytics YOLO, PIL
-- **Structure**: Python package with command-line interface distributed via PyPI
+- **Purpose**: A framework to enable multimodal models to operate a computer using the same inputs and outputs as a human operator
+- **Tech Stack**: Python 3.x, PyAutoGUI, PIL/Pillow, OpenAI API, Google AI, Anthropic Claude, Qwen-VL, LLaVA via Ollama, EasyOCR, YOLOv8
+- **Structure**: Monolithic Python package with modular utilities for cross-platform computer automation
+
+---
 
 ## 2. Project Goals & Scope
 
-- :large_green_circle: Focus: Multimodal AI computer operation, screen analysis, and automation
-- :large_green_circle: In Scope: Adding new multimodal models, improving performance, cross-platform compatibility
-- :red_circle: Out of Scope: Major refactoring until main.py exceeds 1000 lines (Software 2.0 approach)
-- :hammer_and_wrench: Avoid introducing major dependencies without review
+- 🟢 **Focus**: Enabling AI models to view screenshots and execute mouse/keyboard actions to complete objectives
+- 🟢 **Scope**: Cross-platform support (macOS, Windows, Linux), multiple AI model integrations, OCR and computer vision capabilities
+- 🔴 **Out of Scope**: Web UI, mobile support, complex application-specific integrations
+- 🛠️ **Do not introduce**: Major dependencies without review, breaking changes to the core operation flow
 
 ---
 
 ## 3. Key Directories & Architecture
 
-- `/operate`: Main package containing all core functionality
-  - `/operate/models`: AI model APIs and prompts (`apis.py`, `prompts.py`)
-  - `/operate/models/weights`: YOLO model weights for Set-of-Mark prompting (`best.pt`)
-  - `/operate/utils`: Utility modules (screenshot, OCR, OS operations, styling)
-  - `operate.py`: Core operating logic and main loop
-  - `main.py`: CLI entry point with argument parsing
-  - `config.py`: Configuration management with singleton pattern
-  - `exceptions.py`: Custom exception classes
-- `/readme`: Documentation assets and images
-- `/.github`: GitHub workflows and templates
-- **Entry point**: `operate` command (via setup.py console script)
+- `/operate/`: Main package containing core functionality
+  - `/operate/main.py`: CLI entry point and argument parsing
+  - `/operate/operate.py`: Core orchestration logic and main loop
+  - `/operate/config.py`: Configuration management and API key handling
+  - `/operate/models/`: AI model integrations and prompt management
+    - `/operate/models/apis.py`: API clients for various AI services
+    - `/operate/models/prompts.py`: System prompts and user interaction templates
+    - `/operate/models/weights/`: YOLOv8 model weights for object detection
+  - `/operate/utils/`: Utility modules
+    - `/operate/utils/operating_system.py`: Cross-platform mouse/keyboard automation
+    - `/operate/utils/screenshot.py`: Screen capture utilities
+    - `/operate/utils/ocr.py`: Optical character recognition functions
+    - `/operate/utils/label.py`: YOLO-based object labeling and detection
+    - `/operate/utils/style.py`: Terminal styling and ANSI color codes
+- **Entry point**: `operate` command (installed via pip) or `python -m operate.main`
 
 ---
 
 ## 4. Coding Style & Conventions
 
-- **Language**: Python 3.8+ (specified in GitHub workflow)
-- **Code Organization**: Follow Software 2.0 principles - avoid premature refactoring
-- **Imports**: Use absolute imports for internal modules (`from operate.utils.style import ...`)
-- **Configuration**: Singleton pattern used for Config class
-- **CLI**: Use argparse for command-line interface with descriptive help text
-- **Error Handling**: Custom exceptions defined in `exceptions.py`
-- **File Naming**: Use snake_case for Python files and modules
-- **No formal linting/formatting tools enforced** - follow existing code style
+- **Imports**: Group standard library, third-party, and local imports with blank lines between groups
+- **Error handling**: Use try-catch blocks with specific exception types, print error messages with context
+- **Logging**: Use `config.verbose` flag for debug output, prefix log messages with module context
+- **Naming**: Use descriptive variable names, snake_case for functions and variables
+- **Comments**: Include docstrings for public functions, inline comments for complex logic
+- **Formatting**: Follow PEP 8 standards, use consistent indentation (4 spaces)
 
 ---
 
 ## 5. Framework & Library Usage
 
-- **AI Models**: Integrated with OpenAI (GPT-4o, GPT-4.1, o1), Claude 3, Gemini Pro Vision, Qwen-VL, LLaVa via Ollama
-- **Computer Vision**: EasyOCR for text recognition, Ultralytics YOLO for object detection
-- **Screen Automation**: PyAutoGUI for mouse/keyboard control, mss for screenshots
-- **UI**: prompt-toolkit for interactive CLI prompts and dialogs
-- **Environment**: python-dotenv for API key management
-- **Async**: Limited async usage - avoid async/await patterns unless necessary
-- **Dependencies**: Use only packages listed in `requirements.txt` and `requirements-audio.txt`
+- **Automation**: PyAutoGUI for cross-platform mouse/keyboard control
+- **Image processing**: PIL/Pillow for screenshot manipulation and OCR
+- **AI Models**: OpenAI GPT-4, Google Gemini, Anthropic Claude, Qwen-VL, LLaVA via Ollama
+- **Computer Vision**: YOLOv8 for object detection, EasyOCR for text recognition
+- **Async**: Limited async support - most operations are synchronous
+- **3rd-party**: Use dependencies listed in `requirements.txt` only, avoid adding new packages without review
 
 ---
 
 ## 6. Running the Project
 
 ```bash
-# Install from PyPI (recommended)
-pip install self-operating-computer
+# Install dependencies
+pip install -r requirements.txt
 
-# Run with default GPT-4o model
+# Install the package locally
+pip install -e .
+
+# Run with default model (GPT-4 with OCR)
 operate
 
-# Run with specific models
-operate -m o1-with-ocr
-operate -m gpt-4.1-with-ocr
-operate -m claude-3
+# Run with specific model
+operate -m gpt-4-with-ocr
 operate -m gemini-pro-vision
+operate -m claude-3
 operate -m qwen-vl
 operate -m llava
 
-# Development setup (from source)
-git clone https://github.com/OthersideAI/self-operating-computer.git
-cd self-operating-computer
-pip install -r requirements.txt
-pip install .
-
-# Voice mode (requires additional setup)
-pip install -r requirements-audio.txt
-# macOS: brew install portaudio
-# Linux: sudo apt install portaudio19-dev python3-pyaudio
+# Run with voice input
 operate --voice
 
-# Other options
-operate --verbose  # Enable verbose logging
-operate --prompt "your objective"  # Direct prompt input
+# Run with direct prompt
+operate --prompt "Go to google.com"
+
+# Run in verbose mode
+operate --verbose
+
+# Run evaluation tests
+python evaluate.py
 ```
 
 ---
 
 ## 7. Testing Instructions
 
-- **Test runner**: Custom evaluation system using `evaluate.py`
-- **Location**: Main test file is `evaluate.py` in root directory
-- **Test approach**: Automated objective completion with GPT-4v evaluation
-
-### Running Tests
-
-```bash
-# Run evaluation tests
-python3 evaluate.py
-```
-
-### Test Process
-- Automatically prompts `operate` to perform simple objectives
-- Takes screenshots after completion
-- Uses GPT-4v to evaluate if objectives were successfully met
-- Outputs `[PASSED]` or `[FAILED]` with justification
-
-### Adding New Tests
-- Modify `TEST_CASES` dictionary in `evaluate.py`
-- Format: `"Objective for operate": "Guideline for passing evaluation"`
-- Include evaluation screenshot in PRs that could impact performance
-
-### Current Test Cases
-- "Go to Github.com": Validates Github page is visible
-- "Go to Youtube.com and play a video": Validates YouTube video player is visible
+- **Test runner**: Use `python evaluate.py` for automated testing
+- **Location**: Tests are defined in `evaluate.py` in the root directory
+- **Test cases**: Currently includes "Go to Github.com" and "Go to Youtube.com and play a video"
+- **Evaluation**: GPT-4 evaluates screenshots against success criteria
+- **Before committing code**:
+  - Run `python evaluate.py` to ensure all test cases pass
+  - Include screenshot of evaluation output in PRs that could impact performance
+- **Adding new tests**:
+  - Add test case to `TEST_CASES` dictionary in `evaluate.py`
+  - Define clear success criteria for each test
+  - Ensure tests are simple and reproducible
 
 ---
 
 ## 8. Repository Workflow
 
-- **Branching**: Use descriptive feature branch names (e.g., `my-new-feature`)
-- **Commits**: Write descriptive commit messages in imperative tense
-  - Example: `Add some feature`
-- **PRs**: 
-  - Fork repository and create feature branch
-  - Include evaluation screenshots for performance-impacting changes
-  - Follow standard GitHub PR process
-- **Release**: Automated PyPI publishing via GitHub Actions on version tags (`v*`)
-
-### Standard Workflow
-```bash
-git checkout -b my-new-feature
-git commit -am 'Add some feature'  
-git push origin my-new-feature
-# Create Pull Request on GitHub
-```
+- **Branching**: Use descriptive feature branch names (e.g., `feat/add-new-model`, `fix/linux-compatibility`)
+- **Commits**: Write descriptive commit messages explaining what was changed and why
+- **PRs**: Include evaluation test results for performance-impacting changes
+- **Testing**: Run `python evaluate.py` before submitting PRs
+- **Code review**: Focus on maintaining cross-platform compatibility and performance
 
 ---
 
 ## 9. Known Issues / Warnings
 
-- **API Keys**: Must be stored in `.env` file - required for operation
-- **Permissions**: macOS requires Terminal app permissions for "Screen Recording" and "Accessibility" 
-- **Platform Support**: Some Linux and Windows compatibility issues remain
-- **Model Requirements**: GPT-4o requires minimum $5 API credit spend to unlock access
-- **LLaVA Performance**: Very high error rates when using LLaVA model
-- **Screenshot Handling**: PNG files are gitignored to avoid committing test screenshots
-- **Voice Mode**: Requires additional audio dependencies and platform-specific setup
-- **Refactoring Policy**: Avoid major file restructuring until main.py exceeds 1000 lines
-- **OCR Mode**: Default mode uses EasyOCR for better performance than vanilla GPT-4
-- **Model Weights**: YOLOv8 model weights (`best.pt`) included for Set-of-Mark prompting
+- **Linux compatibility**: Some issues with Linux and Windows compatibility exist - PRs to fix are encouraged
+- **Dependencies**: Avoid adding major new dependencies without team review
+- **Performance**: Screenshot grid overlay is critical for click accuracy - changes require evaluation
+- **Security**: Framework executes arbitrary mouse/keyboard actions - use with caution
+- **API keys**: Multiple API keys required for different models (OpenAI, Google, Anthropic, Qwen)
+- **Voice mode**: Requires additional `requirements-audio.txt` and system dependencies (portaudio)
+- **Ollama**: LLaVA integration has high error rates, intended as experimental base for local models
+- **YOLOv8**: Model weights (`best.pt`) are included - users can swap in improved models
