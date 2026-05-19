@@ -13,6 +13,10 @@ from dotenv import load_dotenv
 TEST_CASES = {
     "Go to Github.com": "A Github page is visible.",
     "Go to Youtube.com and play a video": "The YouTube video player is visible.",
+    "Go to Google.com and scroll down to find the 'I'm Feeling Lucky' button": "Google's homepage is visible with the 'I'm Feeling Lucky' button shown on screen.",
+    "Go to Wikipedia.org and scroll down to find the 'Languages' section": "Wikipedia homepage is visible with the Languages section displayed on screen.",
+    "Go to a long webpage (like news.ycombinator.com) and scroll to the bottom": "The page is scrolled to show the bottom content, such as footer or pagination controls.",
+    "Go to Reddit.com and scroll down to see more posts": "Reddit homepage is visible with multiple posts shown, indicating successful scrolling through the feed.",
 }
 
 EVALUATION_PROMPT = """
